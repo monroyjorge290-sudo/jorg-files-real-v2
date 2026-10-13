@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jorg Files Real</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#0a0a0a] text-white min-h-screen font-sans">
+<div class="max-w-md mx-auto p-4">
+  <h1 class="text-2xl font-bold py-5 flex items-center gap-2">📁 Jorg Files <span class="text-[10px] bg-violet-600 px-2 py-1 rounded-full">REAL ANDROID 16</span></h1>
+  
+  <div id="permBanner" class="bg-amber-500/20 border border-amber-500/50 p-4 rounded-2xl text-sm mb-5">
+    <p class="font-bold mb-1">⚠️ Permiso necesario en Android 16</p>
+    <p class="text-zinc-300 text-xs mb-3">Android 16 bloquea el acceso. Necesitas activar "Todos los archivos".</p>
+    <button onclick="requestAllFiles()" class="w-full bg-amber-500 text-black px-4 py-3 rounded-full font-bold text-sm">1. DAR PERMISO AHORA</button>
+  </div>
+
+  <div class="flex gap-2 mb-4 overflow-x-auto pb-2">
+    <button onclick="listFiles('/storage/emulated/0/Download')" class="path-btn bg-white text-black px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap">📥 Descargas</button>
+    <button onclick="listFiles('/storage/emulated/0/DCIM')" class="path-btn bg-zinc-800 px-5 py-2.5 rounded-full text-sm whitespace-nowrap">📷 Cámara</button>
+    <button onclick="listFiles('/storage/emulated/0/Pictures')" class="path-btn bg-zinc-800 px-5 py-2.5 rounded-full text-sm whitespace-nowrap">🖼️ Fotos</button>
+    <button onclick="listFiles('/storage/emulated/0/Documents')" class="path-btn bg-zinc-800 px-5 py-2.5 rounded-full text-sm whitespace-nowrap">📄 Docs</button>
+  </div>
+
+  <div class="bg-[#1a1a1a] rounded-2xl p-3 mb-4 flex justify-between items-center">
+    <span id="pathLabel" class="text-xs text-zinc-400 truncate">/storage/emulated/0/Download</span>
+    <button onclick="refresh()" class="bg-zinc-800 w-8 h-8 rounded-full text-sm">↻</button>
+  </div>
+
+  <div id="fileList" class="space-y-2 pb-20">
+    <div class="text-center py-20 text-zinc-500">
+      <div class="text-5xl mb-4">🔒</div>
+      <p class="text-sm">Primero dale a "DAR PERMISO"<br>luego a "Descargas" para ver tus archivos reales</p>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentPath = '/storage/emulated/0/Download';
+function requestAllFiles(){
+  if(window.AndroidBridge && window.AndroidBridge.requestManageAllFiles){
+    window.AndroidBridge.requestManageAllFiles();
+  } else {
+    alert('Instala el APK primero. Este boton solo funciona en el celular.');
+  }
+}
+function listFiles(path){
+  currentPath = path;
+  document.getElementById('pathLabel').textContent = path;
+  document.querySelectorAll('.path-btn').forEach(b=>{b.className='path-btn bg-zinc-800 px-5 py-2.5 rounded-full text-sm whitespace-nowrap'});
+  event.target.className='path-btn bg-white text-black px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap';
+  if(window.AndroidBridge && window.AndroidBridge.listFiles){
+    const result = window.AndroidBridge.listFiles(path);
+    try {
+      const files = JSON.parse(result);
+      render(files);
+      if(files.length>0) document.getElementById('permBanner').style.display='none';
+    } catch(e){
+      document.getElementById('fileList').innerHTML = '<div class="bg-red-500/20 p-4 rounded-2xl text-sm">Error: '+result+'<br><br>Asegurate de dar permiso de Todos los archivos en Ajustes.</div>';
+    }
+  } else {
+    document.getElementById('fileList').innerHTML = '<div class="text-zinc-500 text-center py-10 text-sm">Estás en el navegador. Instala el APK en tu Android 16 para ver archivos reales.</div>';
+  }
+}
+function render(files){
+  const el = document.getElementById('fileList');
+  if(!files.length){ el.innerHTML = '<div class="text-center py-10 text-zinc-500 text-sm">Carpeta vacía</div>'; return; }
+  el.innerHTML = files.map(f=>`
+    <div class="flex items-center gap-3 p-3.5 rounded-2xl bg-[#1a1a1a] border border-zinc-800/50">
+      <div class="w-11 h-11 rounded-xl bg-violet-600/20 flex items-center justify-center text-lg">${f.isDir?'📁':'📄'}</div>
+      <div class="flex-1 min-w-0"><div class="truncate text-[14px] font-medium">${f.name}</div><div class="text-[11px] text-zinc-500">${f.isDir?'Carpeta': (Math.round(f.size/1024)+' KB')}</div></div>
+      ${f.isDir?`<button onclick="listFiles('${currentPath}/${f.name}')" class="text-xs bg-zinc-800 px-3.5 py-2 rounded-full">Abrir</button>`:''}
+    </div>
+  `).join('');
+}
+function refresh(){ listFiles(currentPath); }
+</script>
+</body>
+</html>
